@@ -1,2 +1,2 @@
 # collabify-md
-A markdown collaboration editor, written with angular and golang
+A realtime, markdown collaboration editor, written with angular and golang
