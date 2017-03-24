@@ -1,13 +1,14 @@
-# Compiled Object files, Static and Dynamic libs (Shared Objects)
+# Golang
+## Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
 *.a
 *.so
 
-# Folders
+## Folders
 _obj
 _test
 
-# Architecture specific extensions/prefixes
+## Architecture specific extensions/prefixes
 *.[568vq]
 [568vq].out
 
@@ -22,3 +23,21 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+# Mac OS
+.DS_Store
+._*
+
+# NPM
+node_modules/
+.npm
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+typings
+*.js
+*.js.map
