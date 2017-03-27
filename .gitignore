@@ -41,3 +41,8 @@ yarn-error.log*
 typings
 *.js
 *.js.map
+
+# Project specifics
+.idea/
+.vscode
+*.iml
