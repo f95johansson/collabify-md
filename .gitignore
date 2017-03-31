@@ -47,3 +47,4 @@ typings
 .vscode
 *.iml
 drive-credentials.json
+server/collabify-server

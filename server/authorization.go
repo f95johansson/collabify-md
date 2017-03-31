@@ -17,6 +17,31 @@ import (
 	"google.golang.org/api/drive/v3"
 )
 
+/*
+func authenticate() (*drive.Service, error) {
+	token, err := getUserCredentials()
+	if err != nil {
+		// user not logged in
+
+	}
+}
+
+func getUserCredentials() (*oauth2.Token, error) {
+}
+
+func getSavedLoginCredentials() {
+
+}
+
+func getGoogleLoginUrl() {
+
+}
+
+func saveLoginCredentials() {
+
+}
+*/
+
 // getClient uses a Context and Config to retrieve a Token
 // then generate a Client. It returns the generated Client.
 func getClient(ctx context.Context, config *oauth2.Config) *http.Client {
@@ -89,7 +114,7 @@ func saveToken(file string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-func main() {
+func mainnnnnn() {
 	ctx := context.Background()
 
 	b, err := ioutil.ReadFile("drive-credentials.json")
@@ -99,7 +124,7 @@ func main() {
 
 	// If modifying these scopes, delete your previously saved credentials
 	// at ~/.credentials/drive-go-quickstart.json
-	config, err := google.ConfigFromJSON(b, drive.DriveFileScope)
+	config, err := google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope) //, drive.DriveFileScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
