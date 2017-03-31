@@ -4,10 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 
 import { AppComponent } from './app.component';
+import { InputAreaComponent } from './input-area/input-area.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    InputAreaComponent
   ],
   imports: [
     BrowserModule,
