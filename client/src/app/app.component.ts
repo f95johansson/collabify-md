@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { InputAreaComponent } from './input-area/input-area.component';
 
 @Component({
   selector: 'app-root',
