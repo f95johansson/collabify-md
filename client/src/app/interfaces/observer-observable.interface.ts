@@ -22,5 +22,5 @@ export interface Observable {
      * Registers a new observer to receive updates from this observable
      * @param the observer to add
      */
-    addObserver(observer: Observer);
+    registerObserver(observer: Observer);
 }
