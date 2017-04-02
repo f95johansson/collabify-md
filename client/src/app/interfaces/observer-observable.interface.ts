@@ -3,6 +3,12 @@
  * in compliance with the observer/observable designpattern 
  */
 export interface Observer {
+
+    /**
+     * Callback to invoke when the observable subject changes
+     * @param subject the subject that changed
+     * @param action the change made
+     */
     update(subject: Observable, action: Object);
 }
 
@@ -11,5 +17,10 @@ export interface Observer {
  * in compliance with the observer/observable designpattern 
  */
 export interface Observable {
+
+    /**
+     * Registers a new observer to receive updates from this observable
+     * @param the observer to add
+     */
     addObserver(observer: Observer);
 }
