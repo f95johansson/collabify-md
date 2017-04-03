@@ -1,32 +1,99 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
-	"os"
-	"os/user"
-	"path/filepath"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
+
+	"github.com/coreos/go-oidc"
 )
 
-/*
-func authenticate() (*drive.Service, error) {
-	token, err := getUserCredentials()
-	if err != nil {
-		// user not logged in
+var (
+	provider *oidc.Provider
+	config   *oauth2.Config
+	verfier  *oidc.IDTokenVerifier
+)
 
-	}
+func loginRedirect(ctx context.Context) string { //(*drive.Service, error) {
+	provider = getOpenIDConnectProvider(ctx)
+	config = getConfig()
+
+	/*
+		token, err := getUserCredentials()
+		if err != nil {
+			// user not logged in
+
+		}
+	*/
+	return config.AuthCodeURL("state-token") //, oauth2.AccessTypeOffline)
 }
 
-func getUserCredentials() (*oauth2.Token, error) {
+func authenticate(r *http.Request) bool {
+	oauth2Token, err := config.Exchange(ctx, r.URL.Query().Get("code"))
+	if err != nil {
+		return false
+	}
+	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
+	if !ok {
+		return false
+	}
+
+	oidcConfig := &oidc.Config{
+		ClientID:       config.ClientID,
+		SkipNonceCheck: true,
+	}
+	verifier := provider.Verifier(oidcConfig)
+
+	idToken, err := verifier.Verify(ctx, rawIDToken)
+	if err != nil {
+		return false
+	}
+	fmt.Println(idToken) // printing because go is annoying and wont let me just create a variable
+	return true
+}
+
+func getOpenIDConnectProvider(ctx context.Context) *oidc.Provider {
+	if provider == nil {
+		var err error
+		provider, err = oidc.NewProvider(ctx, "https://accounts.google.com")
+		if err != nil {
+			// handle error
+		}
+	}
+
+	/*
+		if verifier == nil {
+			oidcConfig := &oidc.Config{
+				ClientID:       config.ClientID,
+				SkipNonceCheck: true,
+			}
+			verifier := provider.Verifier(oidcConfig)
+		}
+	*/
+	return provider
+}
+
+func getConfig() *oauth2.Config {
+	if config == nil {
+		b, err := ioutil.ReadFile("drive-credentials.json")
+		if err != nil {
+			log.Fatalf("Unable to read drive credentials: %v", err)
+		}
+		config, err = google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope) //, drive.DriveFileScope)
+		config.Scopes = []string{oidc.ScopeOpenID, drive.DriveMetadataReadonlyScope}
+		config.Endpoint = provider.Endpoint()
+		config.RedirectURL = "http://localhost:8082/edit"
+	}
+	return config
+}
+
+func getUserCredentials() { //(*oauth2.Token, error) {
 }
 
 func getSavedLoginCredentials() {
@@ -40,8 +107,9 @@ func getGoogleLoginUrl() {
 func saveLoginCredentials() {
 
 }
-*/
 
+// Google's example code, using it as reference
+/*
 // getClient uses a Context and Config to retrieve a Token
 // then generate a Client. It returns the generated Client.
 func getClient(ctx context.Context, config *oauth2.Config) *http.Client {
@@ -151,3 +219,4 @@ func mainnnnnn() {
 	}
 
 }
+*/
