@@ -35,6 +35,9 @@ func loginRedirect(ctx context.Context) string { //(*drive.Service, error) {
 }
 
 func authenticate(r *http.Request) bool {
+	provider = getOpenIDConnectProvider(ctx)
+	config = getConfig()
+
 	oauth2Token, err := config.Exchange(ctx, r.URL.Query().Get("code"))
 	if err != nil {
 		return false
