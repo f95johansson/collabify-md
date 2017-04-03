@@ -33,7 +33,7 @@ func main() {
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, loiginRedirect(ctx), http.StatusFound)
+	http.Redirect(w, r, loginRedirect(ctx), http.StatusFound)
 }
 
 func edit(w http.ResponseWriter, r *http.Request) {
