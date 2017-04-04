@@ -4,9 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 
 import { AppComponent } from './app.component';
-import { InputAreaComponent } from './input-area/input-area.component';
-import { DocumentService } from './document.service';
-import { PreviewAreaComponent } from './preview-area/preview-area.component';
+import { InputAreaComponent } from './components/input-area/input-area.component';
+import { DocumentService } from './services/document.service';
+import { PreviewAreaComponent } from './components/preview-area/preview-area.component';
 
 @NgModule({
   declarations: [

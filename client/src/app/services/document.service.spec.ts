@@ -2,7 +2,7 @@ import { TestBed, inject } from '@angular/core/testing';
 
 import { DocumentService } from './document.service';
 
-import { Observer, Observable } from './interfaces/observer-observable.interface';
+import { Observer, Observable } from '../interfaces/observer-observable.interface';
 
 describe('DocumentService', () => {
   beforeEach(() => {
