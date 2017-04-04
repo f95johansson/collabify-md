@@ -39,7 +39,6 @@ yarn-debug.log*
 yarn-error.log*
 .eslintcache
 typings
-*.js
 *.js.map
 
 # Project specifics

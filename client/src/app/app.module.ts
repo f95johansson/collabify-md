@@ -4,10 +4,15 @@ import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 
 import { AppComponent } from './app.component';
+import { InputAreaComponent } from './components/input-area/input-area.component';
+import { DocumentService } from './services/document.service';
+import { PreviewAreaComponent } from './components/preview-area/preview-area.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    InputAreaComponent,
+    PreviewAreaComponent,
   ],
   imports: [
     BrowserModule,
