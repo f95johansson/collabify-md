@@ -1,12 +1,30 @@
 :host {
-    display: inline-flex;
-    width: 49%;
+    display: block;
+    max-width: 21cm;
+    //max-height: 29.7cm; //Should be put on media print
+    //height: 100%;
+    width: 100%;
     height: 100%;
+    overflow: auto;
+    text-align: justify;
      
     div {
-        background-color: lawngreen;
+        background-color: #f3f3f3;
+        color: black;
         width: 100%;
-        height: 100%;
+        padding: 1em;
+        & h1:first-child {
+            margin-top: 0;
+        }
+    }
+    
+    pre {
+        text-align: center;
+    }
+
+    .pageBreak {
         display: block;
+        background-color: red;
     }
 }
+

@@ -1,1 +1,22 @@
-:host {color: white;}
+:host {
+    color: white;
+    
+    .preview-wrapper {
+        height: 100%;
+        background-color: #f3f3f3;
+        overflow: auto;
+    }
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        preview-area-component, preview-area-component * {
+            visibility: visible;
+        }
+        preview-area-component {
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+    }
+}
