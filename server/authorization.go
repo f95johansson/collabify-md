@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"crypto/rand"
+	"errors"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,53 +13,78 @@ import (
 	"google.golang.org/api/drive/v3"
 
 	"github.com/coreos/go-oidc"
+	"fmt"
 )
 
 var (
 	provider *oidc.Provider
 	config   *oauth2.Config
 	verfier  *oidc.IDTokenVerifier
+	state    = makeRandomState()
 )
 
-func loginRedirect(ctx context.Context) string { //(*drive.Service, error) {
+func makeRandomState() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return string(b)
+}
+
+func LoginRedirect(ctx context.Context) string { //(*drive.Service, error) {
 	provider = getOpenIDConnectProvider(ctx)
 	config = getConfig()
 
-	/*
-		token, err := getUserCredentials()
-		if err != nil {
-			// user not logged in
-
-		}
-	*/
-	return config.AuthCodeURL("state-token") //, oauth2.AccessTypeOffline)
+	return config.AuthCodeURL(state, oauth2.AccessTypeOffline)
 }
 
-func authenticate(r *http.Request) bool {
+func Authenticate(r *http.Request) (string, *oidc.IDToken, error) {
+	idTokenString, idToken, err := authenticateCookie(r)
+	if err != nil {
+		return AuthenticateCallback(r)
+	}
+	return idTokenString, idToken, err
+}
+
+func AuthenticateCallback(r *http.Request) (string, *oidc.IDToken, error) {
 	provider = getOpenIDConnectProvider(ctx)
 	config = getConfig()
 
 	oauth2Token, err := config.Exchange(ctx, r.URL.Query().Get("code"))
+	fmt.Print(oauth2Token.Expiry)
 	if err != nil {
-		return false
+		return "", &oidc.IDToken{}, errors.New("Error requesting the OAuth2 token (" + err.Error() + ")")
 	}
 	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
 	if !ok {
-		return false
+		return "", &oidc.IDToken{}, errors.New("Error requesting the id_token")
 	}
 
+	return authenticateIDToken(rawIDToken)
+}
+
+func authenticateCookie(r *http.Request) (string, *oidc.IDToken, error) {
+	provider = getOpenIDConnectProvider(ctx)
+	config = getConfig()
+
+	token, err := r.Cookie("token")
+	if err != nil {
+		return "", &oidc.IDToken{}, errors.New("Error requesting the id_token cookie")
+	}
+
+	return authenticateIDToken(token.Value)
+}
+
+func authenticateIDToken(token string) (string, *oidc.IDToken, error) {
 	oidcConfig := &oidc.Config{
 		ClientID:       config.ClientID,
 		SkipNonceCheck: true,
 	}
 	verifier := provider.Verifier(oidcConfig)
-
-	idToken, err := verifier.Verify(ctx, rawIDToken)
+	idToken, err := verifier.Verify(ctx, token)
 	if err != nil {
-		return false
+		return "", &oidc.IDToken{}, errors.New("Could not validate id_token (" + err.Error() + ")")
 	}
-	fmt.Println(idToken) // printing because go is annoying and wont let me just create a variable
-	return true
+	fmt.Println(idToken.Expiry)
+	return token, idToken, nil
 }
 
 func getOpenIDConnectProvider(ctx context.Context) *oidc.Provider {
@@ -66,19 +92,10 @@ func getOpenIDConnectProvider(ctx context.Context) *oidc.Provider {
 		var err error
 		provider, err = oidc.NewProvider(ctx, "https://accounts.google.com")
 		if err != nil {
-			// handle error
+			// FIXME: handle error
 		}
 	}
 
-	/*
-		if verifier == nil {
-			oidcConfig := &oidc.Config{
-				ClientID:       config.ClientID,
-				SkipNonceCheck: true,
-			}
-			verifier := provider.Verifier(oidcConfig)
-		}
-	*/
 	return provider
 }
 
@@ -91,12 +108,12 @@ func getConfig() *oauth2.Config {
 		config, err = google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope) //, drive.DriveFileScope)
 		config.Scopes = []string{oidc.ScopeOpenID, drive.DriveMetadataReadonlyScope}
 		config.Endpoint = provider.Endpoint()
-		config.RedirectURL = "http://localhost:8082/edit"
+		config.RedirectURL = "http://localhost:8082/api/login/callback/"
 	}
 	return config
 }
 
-func getUserCredentials() { //(*oauth2.Token, error) {
+func getUserCredentialsss() { //(*oauth2.Token, error) {
 }
 
 func getSavedLoginCredentials() {
