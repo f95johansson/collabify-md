@@ -1,0 +1,10 @@
+:host ul.table-of-content {
+  list-style: none;
+  a {
+    color: #0366d6;
+    &:hover {
+      text-decoration: underline;
+      color: #2b7ace;
+    }
+  }
+}
