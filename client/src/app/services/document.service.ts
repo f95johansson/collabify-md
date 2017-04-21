@@ -10,7 +10,10 @@ export class DocumentService implements Observable {
   private observers: Observer[] = [];
   private document: string = "";
 
-  constructor() { }
+  constructor() {
+    this.connect("ws://echo.websocket.org");
+    setInterval(this.uploadChanges.bind(this), 2000);
+  }
 
   /**
    * Sets up a WebSocket-connection to the server at the given URL
@@ -31,7 +34,7 @@ export class DocumentService implements Observable {
   }
 
   private wsBridge(data) {
-    this.notifyObservers(JSON.parse(data.data));
+    //this.notifyObservers(JSON.parse(data.data));
   }
 
   /**
@@ -56,17 +59,23 @@ export class DocumentService implements Observable {
    * @param newDocument the change-object
    */
   update(newDocument: string) {
-    let changes = this.packChanges(newDocument);
-    this.uploadChanges(changes);
-    this.notifyObservers(changes);
-    changes.forEach(change => this.document = change.applyUpdate(this.document));
+    this.document = newDocument;
+    this.notifyObservers(this.document);
   }
 
-  private uploadChanges(changes: DocumentUpdate[]) {
+  /**
+   * Post changes to docuement to the server
+   * @param changes the changes to post
+   */
+  private uploadChanges() {
     if (this.socket === undefined || this.socket.readyState !== this.socket.OPEN) return;
-    this.socket.send(JSON.stringify(changes));
+    this.socket.send(JSON.stringify(this.packChanges(this.document)));
   }
 
+  /**
+   * Receives the new state of the docuement and creates a list of document updates
+   * @param newDocument the new docuement
+   */
   private packChanges(newDocument: string): DocumentUpdate[] {
     let diffArr = diffjs.diffChars(this.document, newDocument);
     let cursorPos = 0;
@@ -99,5 +108,4 @@ export class DocumentService implements Observable {
   disconnect() {
     this.socket.close();
   }
-
 }

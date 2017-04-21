@@ -1,6 +1,6 @@
 :host {
     display: inline-flex;
-    width: 49%;
+    width: 50%;
     height: 100%;
     float: left; /* Prevents jumpy behaviour when editing */
 
@@ -11,5 +11,6 @@
         height: 100%;
         display: block;
         padding: 1em;
+        overflow: auto;
     }
 }

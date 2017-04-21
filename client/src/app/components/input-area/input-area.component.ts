@@ -14,9 +14,7 @@ export class InputAreaComponent implements OnInit, Observer {
   constructor(private documentService: DocumentService) { }
 
   ngOnInit() {
-    this.documentService.connect("ws://echo.websocket.org");
     this.documentService.registerObserver(this);
-    setInterval(this.updateModel.bind(this), 100);
   }
 
   update(subject: Observable, action: Object) {
@@ -25,6 +23,7 @@ export class InputAreaComponent implements OnInit, Observer {
 
   userUpdate(event) {
     this.document = event.currentTarget.innerText;
+    this.updateModel();
   }
 
   updateModel() {
