@@ -62,7 +62,9 @@ export class PreviewAreaComponent implements OnInit, Observer {
     let page = pages.slice(-1)[0];
     let containerHeight = parseInt(window.getComputedStyle(e).height);
     let pageHeight = parseInt(window.getComputedStyle(page).height);
-    return (containerHeight < pageHeight) ? this.trim(page):str;
+    console.log(this.rawDocument.length, str.length)
+    return ((containerHeight < pageHeight) && 
+            this.rawDocument.length < str.length) ? this.trim(page) : str;
   }
 
   private trim(elem: Element): string {
