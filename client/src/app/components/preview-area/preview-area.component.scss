@@ -16,15 +16,21 @@
         & h1:first-child {
             margin-top: 0;
         }
+        &.page {
+          display: block;
+          height: 100%;
+          margin-top: 1em;
+          border: 1px solid red;
+        }
     }
     
     pre {
         text-align: center;
     }
 
-    .pageBreak {
-        display: block;
-        background-color: red;
+    span.pageBreak {
+      display: block;
+      border: 1px solid red !important;
     }
 }
 

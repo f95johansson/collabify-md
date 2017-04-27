@@ -10,8 +10,8 @@
     padding-top: 1em;
   }
 }
-:host {
-  div {
+:hostselector {
+  div.page {
     -webkit-column-count: 2;
     -moz-column-count: 2;
     column-count: 2;
