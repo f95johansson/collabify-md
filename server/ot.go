@@ -1,15 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"github.com/jeffail/leaps/lib/acl"
 	"github.com/jeffail/leaps/lib/curator"
-	"github.com/jeffail/leaps/lib/store"
 	"github.com/jeffail/leaps/lib/http"
+	"github.com/jeffail/leaps/lib/store"
 	"github.com/jeffail/util/log"
 	"github.com/jeffail/util/metrics"
+	"golang.org/x/net/websocket"
 	"os"
 	"time"
-	"golang.org/x/net/websocket"
 )
 
 var (
@@ -37,6 +38,16 @@ func makeAccessManager() acl.Authenticator {
 
 func makeStorage() store.Type {
 	return store.NewMemory()
+}
+
+func createTempDocument(storage store.Type, cur curator.Type) {
+	str := "# hello"
+	document, err := store.NewDocument(str)
+	if err != nil {
+		fmt.Println("Create document error: ", err)
+	}
+	storage.Create(*document)
+	cur.CreateDocument("1", "1", *document, 500000)
 }
 
 func GetLogger() log.Modular {
@@ -67,11 +78,13 @@ func GetAccessManager() acl.Authenticator {
 func GetOTHandler() curator.Type {
 	if otHandler == nil {
 		var err error
+		storage := GetStorage()
 		otHandler, err = curator.New(
 			curator.NewConfig(),
 			GetLogger(),
 			GetAccessManager(),
-			GetStorage())
+			storage)
+		//createTempDocument(storage, otHandler)
 		if err != nil {
 			logger.Errorln(err.Error())
 		}
