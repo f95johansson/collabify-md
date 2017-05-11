@@ -8,10 +8,13 @@ import { DocumentUpdate } from '../document-update';
 export class DocumentService implements Observable {
   private socket: WebSocket;
   private observers: Observer[] = [];
-  private document: string = "";
+  private oldDocument: string = '';
+  private document: string = '';
+  private documentId: number;
+  private documentVersion: number;
 
   constructor() {
-    this.connect("ws://echo.websocket.org");
+    this.connect('ws://'+window.location.host+'/api/documentsocket', this.connectToDocument);
     setInterval(this.uploadChanges.bind(this), 2000);
   }
 
@@ -29,12 +32,38 @@ export class DocumentService implements Observable {
 
     this.socket = new WebSocket(url);
     this.socket.onmessage = this.wsBridge.bind(this);
-    this.socket.onopen = onConnect; 
-    this.socket.onerror = onError;
+    this.socket.onopen = onConnect.bind(this); 
+    this.socket.onerror = onError.bind(this);
   }
 
-  private wsBridge(data) {
-    //this.notifyObservers(JSON.parse(data.data));
+  connectToDocument() {
+    this.socket.send(JSON.stringify({
+      command: 'edit',
+      token: '1',
+      user_id: '1',
+      document_id: "14944949448c9e3de9-3aab-4c06-bc90-d6f67a2a4a96",
+      leap_document: {
+        document_id: "14944949448c9e3de9-3aab-4c06-bc90-d6f67a2a4a96",
+        content: '--'
+      }
+    }))
+  }
+
+  private wsBridge(response) {
+    let data = JSON.parse(response.data)
+    console.log(data)
+    if (data.response_type === 'document') {
+      this.documentId = data.id;
+      this.documentVersion = data.version;
+      
+    } else if (data.response_type === 'correction') {
+      this.documentVersion = data.version;
+
+    } else if (data.response_type === 'transforms') {
+      for (var update of data.transforms) {
+        this.notifyObservers(new DocumentUpdate(update));
+      }
+    }
   }
 
   /**
@@ -69,7 +98,10 @@ export class DocumentService implements Observable {
    */
   private uploadChanges() {
     if (this.socket === undefined || this.socket.readyState !== this.socket.OPEN) return;
-    this.socket.send(JSON.stringify(this.packChanges(this.document)));
+
+    this.packChanges(this.document).forEach((update) => {
+      this.socket.send(update.packForTransfer(this.documentVersion+1));
+    });
   }
 
   /**
@@ -77,7 +109,7 @@ export class DocumentService implements Observable {
    * @param newDocument the new docuement
    */
   private packChanges(newDocument: string): DocumentUpdate[] {
-    let diffArr = diffjs.diffChars(this.document, newDocument);
+    let diffArr = diffjs.diffChars(this.oldDocument, newDocument);
     let cursorPos = 0;
     let updates = [];
 
@@ -101,6 +133,8 @@ export class DocumentService implements Observable {
         cursorPos += diff.count;
       }
     });
+
+    this.oldDocument = newDocument;
 
     return updates;
   }

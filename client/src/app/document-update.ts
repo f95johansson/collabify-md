@@ -44,4 +44,19 @@ export class DocumentUpdate {
         if (start > end) return str;
         return str.substring(0, start) + str.substring(end);
     }
+
+
+    packForTransfer(version: number): string {
+        return JSON.stringify(
+        {   
+            command: "submit", 
+            transform: { // optional, must be used with submit command
+                position: this.position,
+                num_delete: this.num_delete,
+                insert: this.insert,
+                version: version, //"document version number, int, must be incremented from last known version",
+            }, // (optional)
+        }
+        );
+    }    
 }
