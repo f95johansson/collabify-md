@@ -10,24 +10,34 @@
     padding-top: 1em;
   }
 }
-:hostselector {
+#document {
+  color: black;
+
   div.page {
-    -webkit-column-count: 2;
-    -moz-column-count: 2;
-    column-count: 2;
+    height: 100%;
+    position: relative;
+    padding: 2em 3em;
     
-    -webkit-column-gap: balance;
-    -moz-column-gap: balance;
-    column-gap: balance;
-    
-    -webkit-column-gap: 0.33in;
-    -moz-column-gap: 0.33in;
-    column-gap: 0.33in;
+    .pageNumber {
+      position: absolute;
+      bottom: 2em;
+      right: 2em;
+    }
+    .footer {
+      height: 5em;
+      padding: 1em 3em 1em 3em;;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      .footnotes {
+        font-size: 9pt;
+      }
+      .footnote {
+        float: prince-column-footnote;
+      }
+    }
   }
-}
-.footnote {
-  float: prince-column-footnote;
-}
+
 caption {
   caption-side: top;
 }
@@ -128,7 +138,7 @@ figcaption {
 }
 .footnote {
   margin-left: 0.333em;
-  padding-left: 0.667em;
+  //padding-left: 0.667em;
 }
 .footnote::footnote-call {
   vertical-align: super;
@@ -161,9 +171,9 @@ a[href^="#"] {
   color: inherit;
   text-decoration: none;
 }
-@page {
+/*@page {
   
-}
+}*/
 /*
 body > :first-child {
   counter-reset: page 1;
@@ -223,46 +233,46 @@ h6.counter-reset {
   content: ""  counter(section, decimal) '.' counter(subsection, decimal) '.' counter(subsubsection, decimal) '.' counter(subsubsection, decimal) '.' counter(subsubsubsection, decimal) '.' counter(subsubsubsubsection, decimal) "";
 }
 */
-:host div {
+#document div {
   counter-reset: h1section;
 }
-:host div h1 {
+#document div h1 {
   counter-reset: h2section;
 }
-:host div h2 {
+#document div h2 {
   counter-reset: h3section;
 }
-:host div h3 {
+#document div h3 {
   counter-reset: h4section;
 }
-:host div h4 {
+#document div h4 {
   counter-reset: h5section;
 }
-:host div h5 {
+#document div h5 {
   counter-reset: h6section;
 }
 
-:host div h1:before {
+#document div h1:before {
   counter-increment: h1section;
   content: ""  counter(h1section, decimal) "";
 }
-:host div h2:before {
+#document div h2:before {
   counter-increment: h2section;
   content: ""  counter(h1section, decimal) '.' counter(h2section, decimal) "";
 }
-:host div h3:before {
+#document div h3:before {
   counter-increment: h3section;
   content: ""  counter(h1section, decimal) '.' counter(h2section, decimal) '.' counter(h3section, decimal) "";
 }
-:host div h4:before {
+#document div h4:before {
   counter-increment: h4section;
   content: ""  counter(h1section, decimal) '.' counter(h2section, decimal) '.' counter(h3section, decimal) '.' counter(h4section, decimal) "";
 }
-:host div h5:before {
+#document div h5:before {
   counter-increment: h5section;
   content: ""  counter(h1section, decimal) '.' counter(h2section, decimal) '.' counter(h3section, decimal) '.' counter(h4section, decimal) '.' counter(h5section, decimal) "";
 }
-:host div h6:before {
+#document div h6:before {
   counter-increment: h6section;
   content: ""  counter(h1section, decimal) '.' counter(h2section, decimal) '.' counter(h3section, decimal) '.' counter(h4section, decimal) '.' counter(h5section, decimal) '.' counter(h6section, decimal) "";
 }
@@ -569,4 +579,5 @@ cite a {
   .copyright {
     display: none;
   }
+}
 }

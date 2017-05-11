@@ -1,8 +1,13 @@
 :host {
     display: block;
+    height: 10px;
+}
+#document {
+    display: block;
+    padding: 1em;
     max-width: 21cm;
+    position: relative;
     //max-height: 29.7cm; //Should be put on media print
-    //height: 100%;
     width: 100%;
     height: 100%;
     overflow: auto;
@@ -28,9 +33,5 @@
         text-align: center;
     }
 
-    span.pageBreak {
-      display: block;
-      border: 1px solid red !important;
-    }
 }
 

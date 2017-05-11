@@ -7,6 +7,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Observable, Observer } from '../../interfaces/observer-observable.interface';
 import { DocumentService } from '../../services/document.service';
 import { DocumentUpdate } from '../../document-update';
+import { PreviewStyles } from './preview-style';
 
 declare var AMTparseAMtoTeX;
 
@@ -15,12 +16,14 @@ declare var AMTparseAMtoTeX;
   selector: 'app-preview-area',
   templateUrl: './preview-area.component.html',
   styleUrls: ['./preview-area.component.scss', './pub.scss', './katex.css', './toc.scss'],
-  //encapsulation: ViewEncapsulation.Native
+  encapsulation: ViewEncapsulation.None
 })
 export class PreviewAreaComponent implements OnInit, Observer {
+  private styleManager: PreviewStyles = new PreviewStyles();
   private converter: showdown.Converter;
-  rawDocument: string = "";
-  compiledDocument: HTMLElement;
+  private pageHeight: number;
+  private rawDocument: string = "";
+  private compiledDocument: HTMLElement;
 
   constructor(private documentService: DocumentService,
     private domSanitizer: DomSanitizer,
@@ -37,10 +40,11 @@ export class PreviewAreaComponent implements OnInit, Observer {
       }
     );
     this.converter.setFlavor('github');
+    this.rawDocument = this.paginate("");
   }
 
   update(subject: Observable, action: Object) {
-    this.rawDocument = this.paginate(<string>action);
+    this.rawDocument = this.paginate(<string>action).replace(new RegExp("<br>", "g"), "\n");
   }
 
   /**
@@ -48,27 +52,36 @@ export class PreviewAreaComponent implements OnInit, Observer {
    * returns a html-structure that can be displayed in the view.
    */
   public get compileDocument(): SafeHtml {
-    return this.domSanitizer.bypassSecurityTrustHtml(this.converter.makeHtml(this.rawDocument));
+    let p = document.querySelector(".page");
+    if (p) {
+      this.pageHeight = parseInt(window.getComputedStyle(p).height) - (parseInt(window.getComputedStyle(p).paddingTop) + parseInt(window.getComputedStyle(p).paddingBottom) + (12*5));
+    }
+    let dom = new DOMParser().parseFromString(this.rawDocument, "text/html");
+    let pages = Array.from(dom.querySelectorAll(".page"));
+    
+    let str = pages.map((page, i) => {
+      let self = this;
+      return `<div class="page"> ${this.converter.makeHtml(page.innerHTML)}<span class="pageNumber">${i + 1}</span></div>`;
+    }).join("");
+    return this.domSanitizer.bypassSecurityTrustHtml(str);
   }
 
   private paginate(action: string): string {
-    var e = this.elem.nativeElement;
-    let w = parseInt(window.getComputedStyle(e).width)
+    //let e = this.elem.nativeElement.querySelector("#document");
+    let e = this.elem.nativeElement.querySelector(".page") || this.elem.nativeElement.querySelector("#document");
+    /*let container = e.parentElement;
+    let w = container.offsetWidth//parseInt(window.getComputedStyle(container).width)
     let frac = w / 793;
-    let h = parseInt(window.getComputedStyle(e).height) / frac;
-    e.style.maxHeight = `${h}px`;
+    let h = container.offsetHeight / (frac || 1);//parseInt(window.getComputedStyle(container).height) / frac;
+    container.style.maxHeight = `${h}px`;*/
     return this.doPages(e, action);
   }
 
-  private doPages(e: Element, str: string): string {
-    let page = e.querySelector("#document");
-    let containerHeight = parseInt(window.getComputedStyle(e).height);
-    let pageHeight = parseInt(window.getComputedStyle(page).height);
-
-    page.innerHTML = str;
-    return ((containerHeight < pageHeight) && 
-            (this.rawDocument.replace(/\s+/g, "").length <= str.replace(/\s+/g, "").length)) ? 
-            this.trim(<HTMLElement>page) : str;
+  private doPages(e: HTMLElement, str: string): string {
+    e.innerHTML = str;
+    //let containerHeight = parseInt(window.getComputedStyle(e.parentElement.parentElement).height);
+    //let pageHeight = parseInt(window.getComputedStyle(e).height);
+    return this.trim(<HTMLElement>e);
   }
 
   private trim(elem: HTMLElement): string {
@@ -77,36 +90,39 @@ export class PreviewAreaComponent implements OnInit, Observer {
                                    .join("");
 
     let height = elem.parentElement.parentElement.clientHeight;
+    let width = elem.parentElement.parentElement.clientWidth;
     let clipped = "";
     let elements = Array.from(elem.querySelectorAll("span"));
     elements.forEach((e, i) => {
-      if (e.offsetTop > height) {
+      if (e.offsetTop > (this.pageHeight - 16 - (12 * 3))) { // Subtract line height and bottom margin 3em
         clipped += e.innerText;
       }
     });
     let str = elem.innerHTML.replace(/<span>/g, "").replace(/<\/span>/g, "");
     let pageLength = str.length - clipped.length;
     return this.chunk(str, pageLength)
-               .map(page => this.htmlDecode(page))
+               .map(content => this.wrapInPageDiv(content))
                .join("");
   }
 
   /**
-   * Chunks the provided string into a list of n parts of the specified length.
+   * Chunks the provided string into a list of parts with the specified length.
    * The length of the last element in the list will be <= the specified length.
    * @param str the string to chunk
    * @param length the length of the chunks
    */
   private chunk(str: string, length: number): string[] {
-    return str.match(new RegExp(`.{1,${length}}`, "gi"));
+    return (length < str.length) ? str.match(new RegExp(`(.|[\r\n]){1,${length || 1}}`, "gi")) : [str];
   }
 
-  private htmlDecode(input) {
-    let doc = new DOMParser().parseFromString(input, "text/html");
-    let input2 = doc.documentElement.textContent;
-    let doc2 = new DOMParser().parseFromString(input2, "text/html");
-    let str = `<div class="page" style="display:block;height:100%;margin-top:1em;border:1px solid red;-webkit-column-count: 2;-moz-column-count: 2;column-count: 2;-webkit-column-gap: balance;-moz-column-gap: balance;column-gap: balance;-webkit-column-gap: 0.33in;-moz-column-gap: 0.33in;column-gap: 0.33in;">${doc2.documentElement.innerText}</div>`;
-    return doc2.documentElement.innerText = str;
+  private wrapInPageDiv(input) {
+    let div = document.createElement("div");
+    let footer = document.createElement("div");
+    footer.classList.add("footer");
+    div.classList.add("page");
+    div.innerText = input;
+    div.appendChild(footer);
+    return div.outerHTML;
   }
 
   // ==================== Showdown-plugins ====================
@@ -137,21 +153,21 @@ export class PreviewAreaComponent implements OnInit, Observer {
   private parseFootNotes() {
     let footnotes = {
       type: 'lang', filter: function (text) {
-        // Inline footnotes e.g. "foo[^1]"                              
+        // Inline footnotes e.g. "foo[^1]"
         var i = 0;
         var inline_regex = /\[\^(\d|n)\](?!:)/g;
         text = text.replace(inline_regex, function (match, n) {
-          // We allow both automatic and manual footnote numbering    
+          // We allow both automatic and manual footnote numbering
           if (n == "n") n = i + 1;
 
-          var s = '<sup id="fnref:' + n + '">' +
+          var s = '<sup id="fnref:' + n + '" class="footnote">' +
             '<a href="#fn:' + n + '" rel="footnote">' + n + '</a>' +
             '</sup>';
           i += 1;
           return s;
         });
 
-        // Expanded footnotes at the end e.g. "[^1]: cool stuff"        
+        // Expanded footnotes at the end e.g. "[^1]: cool stuff"
         var end_regex = /\[\^(\d|n)\]: (.*?)\n/g;
         var m = text.match(end_regex);
         var total = m ? m.length : 0;
@@ -160,9 +176,9 @@ export class PreviewAreaComponent implements OnInit, Observer {
         text = text.replace(end_regex, function (match, n, content) {
           if (n == "n") n = i + 1;
 
-          var s = '<li class="footnote" id="fn:' + n + '">' +
+          var s = '<li id="fn:' + n + '">' +
             '<p>' + content + '<a href="#fnref:' + n +
-            '" title="return to article"> ↩</a>' +
+            '" title="return to article"></a>' +
             '</p>' +
             '</li>'
 
@@ -176,7 +192,11 @@ export class PreviewAreaComponent implements OnInit, Observer {
           i += 1;
           return s;
         });
-        return text;
+        let dom = new DOMParser().parseFromString(text, "text/html");
+        if (dom.querySelector(".footnotes")) {
+          dom.querySelector(".footer").appendChild(dom.querySelector(".footnotes"));
+        }
+        return dom.body.innerHTML;
       }
     }
     return [footnotes];
