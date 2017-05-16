@@ -12,11 +12,7 @@ export class DocumentService implements Observable {
   private document: string = '';
   private documentId: number;
   private documentVersion: number;
-
-  constructor() {
-    this.connect('ws://'+window.location.host+'/api/documentsocket', this.connectToDocument);
-    setInterval(this.uploadChanges.bind(this), 2000);
-  }
+  private documentChanged: boolean = false;
 
   /**
    * Sets up a WebSocket-connection to the server at the given URL
@@ -36,17 +32,41 @@ export class DocumentService implements Observable {
     this.socket.onerror = onError.bind(this);
   }
 
-  connectToDocument() {
-    this.socket.send(JSON.stringify({
-      command: 'edit',
-      token: '1',
-      user_id: '1',
-      document_id: "1494498409af4c8bbb-e1e9-4919-b656-79e2fd3b16ef",
-      leap_document: {
-        document_id: "1494498409af4c8bbb-e1e9-4919-b656-79e2fd3b16ef",
-        content: ''
-      }
-    }))
+
+  connectToCreateDocument() {
+    this.connectToDocument(() => {
+      this.socket.send(JSON.stringify({
+        command: 'create',
+        token: '1',
+        user_id: '1',
+        document_id: '',
+        leap_document: {
+          document_id: '',
+          content: ''
+        }
+      }))
+    });
+  }
+
+  connectToEditDocument(documentId) {
+    let func = () => {
+      this.socket.send(JSON.stringify({
+        command: 'edit',
+        token: '1',
+        user_id: '1',
+        document_id: documentId,
+        leap_document: {
+          document_id: documentId,
+          content: ''
+        }
+      }))
+    };
+    this.connectToDocument(func);
+  }
+
+  private connectToDocument(onConnect: () => void) {
+    this.connect('ws://'+window.location.host+'/api/documentsocket', onConnect);
+    setInterval(this.uploadChanges.bind(this), 2000);
   }
 
   private wsBridge(response) {
@@ -97,6 +117,7 @@ export class DocumentService implements Observable {
    */
   update(newDocument: string) {
     this.document = newDocument;
+    this.documentChanged = true;
     //this.notifyObservers(this.document); // TODO: remove comment, stops preview
   }
 
@@ -105,7 +126,7 @@ export class DocumentService implements Observable {
    * @param changes the changes to post
    */
   private uploadChanges() {
-    if (this.socket === undefined || this.socket.readyState !== this.socket.OPEN) return;
+    if (this.socket === undefined || this.socket.readyState !== this.socket.OPEN || !this.documentChanged) return;
 
     this.packChanges(this.document).forEach((update) => {
       this.socket.send(update.packForTransfer(this.documentVersion+1));

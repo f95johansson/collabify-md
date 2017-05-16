@@ -34,6 +34,7 @@ import (
 // Errors for the internal Operational Transform model.
 var (
 	ErrTransformNegDelete = errors.New("transform contained negative delete")
+	ErrTransformNegStart  = errors.New("transform contained negative start")
 	ErrTransformTooLong   = errors.New("transform insert length exceeded the limit")
 	ErrTransformTooOld    = errors.New("transform diff greater than transform archive")
 )
@@ -190,6 +191,10 @@ func applyTransform(content *[]rune, ot *OTransform) error {
 	start := (*content)[:ot.Position]
 	middle := bytes.Runes([]byte(ot.Insert))
 	end := (*content)[ot.Position+ot.Delete:]
+
+	if start < 0 {
+		return ErrTransformNegStart
+	}
 
 	startLen, middleLen, endLen := len(start), len(middle), len(end)
 
