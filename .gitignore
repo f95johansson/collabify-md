@@ -3,7 +3,7 @@
 *.o
 *.a
 *.so
-vendor
+#vendor
 
 ## Folders
 _obj
