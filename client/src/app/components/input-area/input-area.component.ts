@@ -24,7 +24,9 @@ export class InputAreaComponent implements OnInit, Observer {
 
   userUpdate(event) {
     //this.document = event.currentTarget.innerText;
-    this.updateModel(event.currentTarget.innerText);
+    //this.document = event.currentTarget.textContent;
+    this.document = event.currentTarget.innerHTML;
+    this.updateModel(event.currentTarget.innerHTML);
   }
 
   updateModel(newText: string) {

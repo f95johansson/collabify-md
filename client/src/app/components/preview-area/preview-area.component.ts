@@ -7,6 +7,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Observable, Observer } from '../../interfaces/observer-observable.interface';
 import { DocumentService } from '../../services/document.service';
 import { DocumentUpdate } from '../../document-update';
+import { PreviewStyles } from './preview-style';
 
 declare var AMTparseAMtoTeX;
 
@@ -15,12 +16,15 @@ declare var AMTparseAMtoTeX;
   selector: 'app-preview-area',
   templateUrl: './preview-area.component.html',
   styleUrls: ['./preview-area.component.scss', './pub.scss', './katex.css', './toc.scss'],
-  //encapsulation: ViewEncapsulation.Native
+  encapsulation: ViewEncapsulation.None
 })
 export class PreviewAreaComponent implements OnInit, Observer {
+  private styleManager: PreviewStyles = new PreviewStyles();
   private converter: showdown.Converter;
-  rawDocument: string = "";
-  compiledDocument: HTMLElement;
+  private pageHeight: number;
+  private footerHeight: number;
+  private rawDocument: string = "";
+  private compiledDocument: HTMLElement;
 
   constructor(private documentService: DocumentService,
     private domSanitizer: DomSanitizer,
@@ -37,63 +41,105 @@ export class PreviewAreaComponent implements OnInit, Observer {
       }
     );
     this.converter.setFlavor('github');
+    this.rawDocument = this.paginate("");
+    var mediaQueryList = window.matchMedia('print');
+    mediaQueryList.addListener(function(mql) {
+        if (mql.matches) {
+            Array.from(document.getElementsByClassName("page")).forEach((e) => {
+              
+            });
+        }
+    });
   }
 
   update(subject: Observable, action: Object) {
-      //this.rawDocument = this.paginate(<string>action);
+    this.rawDocument = this.paginate(<string>action).replace(new RegExp("<br>", "g"), "\n");
   }
 
+  /**
+   * Runs the stored source code string through the markdown compiler and 
+   * returns a html-structure that can be displayed in the view.
+   */
   public get compileDocument(): SafeHtml {
-    let ret = this.domSanitizer.bypassSecurityTrustHtml(this.converter.makeHtml(this.rawDocument));
-    return ret;
+    let p = document.querySelector(".page");
+    this.footerHeight = 0;
+    if (p) {
+      this.pageHeight = /*(29.7*37.8)*/ 1000 - (parseInt(window.getComputedStyle(p).paddingTop) + parseInt(window.getComputedStyle(p).paddingBottom) + (12*12));
+      let footer = p.getElementsByClassName("footer")[0];
+      if (footer) {
+        this.footerHeight = footer.clientHeight + 12; // Add line height to not clip lines
+      }
+    }
+    let dom = new DOMParser().parseFromString(this.rawDocument, "text/html");
+    let pages = Array.from(dom.querySelectorAll(".page"));
+    
+    let str = pages.map((page, i) => {
+      let self = this;
+      return `<div class="page"> ${this.converter.makeHtml(page.innerHTML)}<span class="pageNumber">${i + 1}</span></div>`;
+    }).join("");
+    return this.domSanitizer.bypassSecurityTrustHtml(str);
   }
 
+  /**
+   * Receives the new raw document and splits it into pages
+   * @param action the new document
+   */
   private paginate(action: string): string {
-    var e = this.elem.nativeElement;
-    let w = parseInt(window.getComputedStyle(e).width)
-    let frac = w / 793;
-    let h = parseInt(window.getComputedStyle(e).height)/frac;
-    e.style.maxHeight = `${h}px`;
-    return this.doPages(e, action);
+    let e = this.elem.nativeElement.querySelector(".page") || this.elem.nativeElement.querySelector("#document");
+    e.innerHTML = action;
+    return this.trim(<HTMLElement>e);
   }
 
-  private doPages(e: Element, str: string): string {
-    let pages = Array.from(e.querySelectorAll(".page"));
-    let page = pages.slice(-1)[0];
-    let containerHeight = parseInt(window.getComputedStyle(e).height);
-    let pageHeight = parseInt(window.getComputedStyle(page).height);
-    return (containerHeight < pageHeight) ? this.trim(page):str;
-  }
-
-  private trim(elem: Element): string {
-    elem.innerHTML = elem.innerHTML.split("")
-                                   .map(word => `<span>${word}</span>`)
+  /**
+   * Takes the content that lays outside the page and moves it to n number
+   * of new pages. This new DOM structure is returned as a string.
+   * @param elem the element containing the document
+   */
+  private trim(elem: HTMLElement): string {
+    elem.innerHTML = elem.innerText.split("")
+                                   .map(char => `<span>${char}</span>`)
                                    .join("");
 
-    let height = elem.parentElement.parentElement.clientHeight; //parseInt(window.getComputedStyle(elem).height);
     let clipped = "";
     let elements = Array.from(elem.querySelectorAll("span"));
     elements.forEach((e, i) => {
-      if (e.offsetTop > height) { // && i > (elements.length / 2)
+      if (e.offsetTop >= (this.pageHeight - this.footerHeight)) { // Subtract line height and bottom margin 3em
         clipped += e.innerText;
       }
     });
-    let str = elem.innerHTML.replace(/<span>/g,"").replace(/<\/span>/g, "");
-    return this.splitAt(str, str.length - clipped.length).map(page => this.htmlDecode(page) )
-                                                         .join("");
-    
-    //return this.htmlDecode(this.splitAt(str, str.length - clipped.length)[0]);
+    let str = elem.innerHTML.replace(/<span>/g, "").replace(/<\/span>/g, "");
+    let pageLength = str.length - clipped.length;
+    return this.chunk(str, pageLength)
+               .map(content => this.wrapInPageDiv(content))
+               .join("");
   }
 
-  private splitAt(str: string, index: number): string[] {
-    return [].concat(str.substring(0, index)).concat(str.substring(index));
+  /**
+   * Chunks the provided string into a list of parts with the specified length.
+   * The length of the last element in the list will be <= the specified length.
+   * @param str the string to chunk
+   * @param length the length of the chunks
+   */
+  private chunk(str: string, length: number): string[] {
+    return (length < str.length) ? str.match(new RegExp(`(.|[\r\n]){1,${length || 1}}`, "gi")) : [str];
   }
 
-  private htmlDecode(input) {
-    let doc = new DOMParser().parseFromString(input, "text/html");
-    return doc.documentElement.textContent += '<span class="pageBreak"></span>';
+  /**
+   * Receives the content of the page and puts it inside a page div.
+   * It alsoincludes the footer div. Everything is returned as an html-string
+   * @param input the content of the page
+   */
+  private wrapInPageDiv(input): string {
+    let div = document.createElement("div");
+    let footer = document.createElement("div");
+    footer.classList.add("footer");
+    div.classList.add("page");
+    div.innerText = input;
+    div.appendChild(footer);
+    return div.outerHTML;
   }
 
+  // ==================== Showdown-plugins ====================
   private parseMath() {
     let parseMath = {
       type: 'output',
@@ -120,49 +166,53 @@ export class PreviewAreaComponent implements OnInit, Observer {
 
   private parseFootNotes() {
     let footnotes = {
-          type: 'lang', filter: function (text) {
-            // Inline footnotes e.g. "foo[^1]"                              
-            var i = 0;
-            var inline_regex = /\[\^(\d|n)\](?!:)/g;
-            text = text.replace(inline_regex, function (match, n) {
-              // We allow both automatic and manual footnote numbering    
-              if (n == "n") n = i + 1;
+      type: 'lang', filter: function (text) {
+        // Inline footnotes e.g. "foo[^1]"
+        var i = 0;
+        var inline_regex = /\[\^(\d|n)\](?!:)/g;
+        text = text.replace(inline_regex, function (match, n) {
+          // We allow both automatic and manual footnote numbering
+          if (n == "n") n = i + 1;
 
-              var s = '<sup id="fnref:' + n + '">' +
-                '<a href="#fn:' + n + '" rel="footnote">' + n + '</a>' +
-                '</sup>';
-              i += 1;
-              return s;
-            });
+          var s = '<sup id="fnref:' + n + '" class="footnote">' +
+            '<a href="#fn:' + n + '" rel="footnote">' + n + '</a>' +
+            '</sup>';
+          i += 1;
+          return s;
+        });
 
-            // Expanded footnotes at the end e.g. "[^1]: cool stuff"        
-            var end_regex = /\[\^(\d|n)\]: (.*?)\n/g;
-            var m = text.match(end_regex);
-            var total = m ? m.length : 0;
-            var i = 0;
+        // Expanded footnotes at the end e.g. "[^1]: cool stuff"
+        var end_regex = /\[\^(\d|n)\]: (.*?)\n/g;
+        var m = text.match(end_regex);
+        var total = m ? m.length : 0;
+        var i = 0;
 
-            text = text.replace(end_regex, function (match, n, content) {
-              if (n == "n") n = i + 1;
+        text = text.replace(end_regex, function (match, n, content) {
+          if (n == "n") n = i + 1;
 
-              var s = '<li class="footnote" id="fn:' + n + '">' +
-                '<p>' + content + '<a href="#fnref:' + n +
-                '" title="return to article"> ↩</a>' +
-                '</p>' +
-                '</li>'
+          var s = '<li id="fn:' + n + '">' +
+            '<p>' + content + '<a href="#fnref:' + n +
+            '" title="return to article"></a>' +
+            '</p>' +
+            '</li>'
 
-              if (i == 0) {
-                s = '<div class="footnotes"><ol>' + s;
-              }
-
-              if (i == total - 1) {
-                s = s + '</ol></div>'
-              }
-              i += 1;
-              return s;
-            });
-            return text;
+          if (i == 0) {
+            s = '<div class="footnotes"><ol>' + s;
           }
+
+          if (i == total - 1) {
+            s = s + '</ol></div>'
+          }
+          i += 1;
+          return s;
+        });
+        let dom = new DOMParser().parseFromString(text, "text/html");
+        if (dom.querySelector(".footnotes")) {
+          dom.querySelector(".footer").appendChild(dom.querySelector(".footnotes"));
         }
+        return dom.body.innerHTML;
+      }
+    }
     return [footnotes];
   }
 
@@ -173,9 +223,9 @@ export class PreviewAreaComponent implements OnInit, Observer {
         let parser = new DOMParser();
         let DOM = parser.parseFromString(html, "text/html");
         let headings = Array.from(DOM.querySelectorAll("h1, h2, h3, h4, h5, h6"));
-        let index = _self.generateTocElement(headings); 
+        let index = _self.generateTocElement(headings);
         index.classList.add("table-of-content");
-        
+
         html = html.replace("\[toc\]", index.outerHTML);
         return html;
       }
@@ -183,7 +233,7 @@ export class PreviewAreaComponent implements OnInit, Observer {
     return [toc];
   }
 
-  static generateTocElement(headings: Array<Element>):HTMLElement {
+  static generateTocElement(headings: Array<Element>): HTMLElement {
     let index = document.createElement("ul");
     let inserted = Array(6).fill(0);
     headings.forEach((heading) => {
@@ -197,39 +247,39 @@ export class PreviewAreaComponent implements OnInit, Observer {
     return index;
   }
 
-  private static addSection(inserted, heading:Element, text):string {
+  private static addSection(inserted, heading: Element, text): string {
     let out = "";
     switch (heading.nodeName) {
       case "H1":
         inserted[0]++;
         out += `${inserted[0]} ${text}`;
         inserted.fill(0, 1);
-      break;
+        break;
       case "H2":
         inserted[1]++;
         out += `${inserted[0]}.${inserted[1]} ${text}`;
         inserted.fill(0, 2);
-      break;
+        break;
       case "H3":
         inserted[2]++;
         out += `${inserted[0]}.${inserted[1]}.${inserted[2]} ${text}`;
         inserted.fill(0, 3);
-      break;
+        break;
       case "H4":
         inserted[3]++;
         out += `${inserted[0]}.${inserted[1]}.${inserted[2]}.${inserted[3]} ${text}`;
         inserted.fill(0, 4);
-      break;
+        break;
       case "H5":
         inserted[4]++;
         out += `${inserted[0]}.${inserted[1]}.${inserted[2]}.${inserted[3]}.${inserted[4]} ${text}`;
         inserted.fill(0, 5);
-      break;
+        break;
       case "H6":
         inserted[5]++;
         out += `${inserted[0]}.${inserted[1]}.${inserted[2]}.${inserted[3]}.${inserted[4]}.${inserted[5]} ${text}`;
         inserted.fill(0, 6);
-      break;
+        break;
     }
     return out;
   }
