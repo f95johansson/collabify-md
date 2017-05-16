@@ -42,17 +42,10 @@ export class PreviewAreaComponent implements OnInit, Observer {
     );
     this.converter.setFlavor('github');
     this.rawDocument = this.paginate("");
-    var mediaQueryList = window.matchMedia('print');
-    mediaQueryList.addListener(function(mql) {
-        if (mql.matches) {
-            Array.from(document.getElementsByClassName("page")).forEach((e) => {
-              
-            });
-        }
-    });
   }
 
   update(subject: Observable, action: Object) {
+    if ((<DocumentUpdate>action).insert === "") return;
     this.rawDocument = this.paginate(<string>action).replace(new RegExp("<br>", "g"), "\n");
   }
 
