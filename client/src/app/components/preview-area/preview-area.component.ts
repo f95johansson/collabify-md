@@ -22,6 +22,7 @@ export class PreviewAreaComponent implements OnInit, Observer {
   private styleManager: PreviewStyles = new PreviewStyles();
   private converter: showdown.Converter;
   private pageHeight: number;
+  private footerHeight: number;
   private rawDocument: string = "";
   private compiledDocument: HTMLElement;
 
@@ -41,6 +42,14 @@ export class PreviewAreaComponent implements OnInit, Observer {
     );
     this.converter.setFlavor('github');
     this.rawDocument = this.paginate("");
+    var mediaQueryList = window.matchMedia('print');
+    mediaQueryList.addListener(function(mql) {
+        if (mql.matches) {
+            Array.from(document.getElementsByClassName("page")).forEach((e) => {
+              
+            });
+        }
+    });
   }
 
   update(subject: Observable, action: Object) {
@@ -53,8 +62,13 @@ export class PreviewAreaComponent implements OnInit, Observer {
    */
   public get compileDocument(): SafeHtml {
     let p = document.querySelector(".page");
+    this.footerHeight = 0;
     if (p) {
-      this.pageHeight = parseInt(window.getComputedStyle(p).height) - (parseInt(window.getComputedStyle(p).paddingTop) + parseInt(window.getComputedStyle(p).paddingBottom) + (12*5));
+      this.pageHeight = /*(29.7*37.8)*/ 1000 - (parseInt(window.getComputedStyle(p).paddingTop) + parseInt(window.getComputedStyle(p).paddingBottom) + (12*12));
+      let footer = p.getElementsByClassName("footer")[0];
+      if (footer) {
+        this.footerHeight = footer.clientHeight + 12; // Add line height to not clip lines
+      }
     }
     let dom = new DOMParser().parseFromString(this.rawDocument, "text/html");
     let pages = Array.from(dom.querySelectorAll(".page"));
@@ -66,35 +80,30 @@ export class PreviewAreaComponent implements OnInit, Observer {
     return this.domSanitizer.bypassSecurityTrustHtml(str);
   }
 
+  /**
+   * Receives the new raw document and splits it into pages
+   * @param action the new document
+   */
   private paginate(action: string): string {
-    //let e = this.elem.nativeElement.querySelector("#document");
     let e = this.elem.nativeElement.querySelector(".page") || this.elem.nativeElement.querySelector("#document");
-    /*let container = e.parentElement;
-    let w = container.offsetWidth//parseInt(window.getComputedStyle(container).width)
-    let frac = w / 793;
-    let h = container.offsetHeight / (frac || 1);//parseInt(window.getComputedStyle(container).height) / frac;
-    container.style.maxHeight = `${h}px`;*/
-    return this.doPages(e, action);
-  }
-
-  private doPages(e: HTMLElement, str: string): string {
-    e.innerHTML = str;
-    //let containerHeight = parseInt(window.getComputedStyle(e.parentElement.parentElement).height);
-    //let pageHeight = parseInt(window.getComputedStyle(e).height);
+    e.innerHTML = action;
     return this.trim(<HTMLElement>e);
   }
 
+  /**
+   * Takes the content that lays outside the page and moves it to n number
+   * of new pages. This new DOM structure is returned as a string.
+   * @param elem the element containing the document
+   */
   private trim(elem: HTMLElement): string {
     elem.innerHTML = elem.innerText.split("")
                                    .map(char => `<span>${char}</span>`)
                                    .join("");
 
-    let height = elem.parentElement.parentElement.clientHeight;
-    let width = elem.parentElement.parentElement.clientWidth;
     let clipped = "";
     let elements = Array.from(elem.querySelectorAll("span"));
     elements.forEach((e, i) => {
-      if (e.offsetTop > (this.pageHeight - 16 - (12 * 3))) { // Subtract line height and bottom margin 3em
+      if (e.offsetTop >= (this.pageHeight - this.footerHeight)) { // Subtract line height and bottom margin 3em
         clipped += e.innerText;
       }
     });
@@ -115,7 +124,12 @@ export class PreviewAreaComponent implements OnInit, Observer {
     return (length < str.length) ? str.match(new RegExp(`(.|[\r\n]){1,${length || 1}}`, "gi")) : [str];
   }
 
-  private wrapInPageDiv(input) {
+  /**
+   * Receives the content of the page and puts it inside a page div.
+   * It alsoincludes the footer div. Everything is returned as an html-string
+   * @param input the content of the page
+   */
+  private wrapInPageDiv(input): string {
     let div = document.createElement("div");
     let footer = document.createElement("div");
     footer.classList.add("footer");

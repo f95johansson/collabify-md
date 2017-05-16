@@ -7,3 +7,12 @@ html, body {
     height: 100%;
 }
 body {background: #3BAB9A}
+
+@media print {
+    * {
+        overflow: visible !important;
+    }
+    html, body {
+        height: 100%;
+    }
+}

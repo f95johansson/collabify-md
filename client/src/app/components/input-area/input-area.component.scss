@@ -13,4 +13,8 @@
         padding: 1em;
         overflow: auto;
     }
+    @media print {
+        display: none !important;
+        float: none;
+    }
 }
