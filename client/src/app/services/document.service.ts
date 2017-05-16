@@ -41,10 +41,10 @@ export class DocumentService implements Observable {
       command: 'edit',
       token: '1',
       user_id: '1',
-      document_id: "14944949448c9e3de9-3aab-4c06-bc90-d6f67a2a4a96",
+      document_id: "1494498409af4c8bbb-e1e9-4919-b656-79e2fd3b16ef",
       leap_document: {
-        document_id: "14944949448c9e3de9-3aab-4c06-bc90-d6f67a2a4a96",
-        content: '--'
+        document_id: "1494498409af4c8bbb-e1e9-4919-b656-79e2fd3b16ef",
+        content: ''
       }
     }))
   }
@@ -52,9 +52,17 @@ export class DocumentService implements Observable {
   private wsBridge(response) {
     let data = JSON.parse(response.data)
     console.log(data)
+
     if (data.response_type === 'document') {
       this.documentId = data.id;
       this.documentVersion = data.version;
+      this.document = data.leap_document.content;
+      this.notifyObservers(new DocumentUpdate({
+        position: 0,
+        num_delete: 0,
+        insert: this.document,
+        version: data.id
+      }));
       
     } else if (data.response_type === 'correction') {
       this.documentVersion = data.version;
@@ -89,7 +97,7 @@ export class DocumentService implements Observable {
    */
   update(newDocument: string) {
     this.document = newDocument;
-    this.notifyObservers(this.document);
+    //this.notifyObservers(this.document); // TODO: remove comment, stops preview
   }
 
   /**

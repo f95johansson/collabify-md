@@ -40,7 +40,7 @@ export class PreviewAreaComponent implements OnInit, Observer {
   }
 
   update(subject: Observable, action: Object) {
-      this.rawDocument = this.paginate(<string>action);
+      //this.rawDocument = this.paginate(<string>action);
   }
 
   public get compileDocument(): SafeHtml {
