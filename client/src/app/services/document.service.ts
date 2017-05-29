@@ -118,7 +118,7 @@ export class DocumentService implements Observable {
   update(newDocument: string) {
     this.document = newDocument;
     this.documentChanged = true;
-    //this.notifyObservers(this.document); // TODO: remove comment, stops preview
+    this.notifyObservers(this.document); // TODO: remove comment, stops preview
   }
 
   /**

@@ -19,7 +19,6 @@ declare var AMTparseAMtoTeX;
   encapsulation: ViewEncapsulation.None
 })
 export class PreviewAreaComponent implements OnInit, Observer {
-  private styleManager: PreviewStyles = new PreviewStyles();
   private converter: showdown.Converter;
   private pageHeight: number;
   private footerHeight: number;
@@ -45,7 +44,7 @@ export class PreviewAreaComponent implements OnInit, Observer {
   }
 
   update(subject: Observable, action: Object) {
-    if ((<DocumentUpdate>action).insert === "") return;
+    if (action instanceof DocumentUpdate) return;
     this.rawDocument = this.paginate(<string>action).replace(new RegExp("<br>", "g"), "\n");
   }
 

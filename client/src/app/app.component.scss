@@ -6,4 +6,9 @@
         background-color: #f3f3f3;
         overflow: auto;
     }
+    @media print {
+        #doc-con {
+            display: none;
+        }
+    }
 }

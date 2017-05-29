@@ -20,6 +20,7 @@ export class InputAreaComponent implements OnInit, Observer {
   }
 
   update(subject: Observable, action: Object) {
+    if (!(action instanceof DocumentUpdate)) return;
     console.log(action)
     this.document = (<DocumentUpdate> action).applyUpdate(this.document);
   }
@@ -28,7 +29,7 @@ export class InputAreaComponent implements OnInit, Observer {
     //this.document = event.currentTarget.innerText;
     //this.document = event.currentTarget.textContent;
     this.document = event.currentTarget.innerHTML;
-    this.updateModel(event.currentTarget.innerHTML);
+    this.updateModel(this.document);
   }
 
   updateModel(newText: string) {
