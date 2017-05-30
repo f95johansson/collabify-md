@@ -192,7 +192,7 @@ func applyTransform(content *[]rune, ot *OTransform) error {
 	middle := bytes.Runes([]byte(ot.Insert))
 	end := (*content)[ot.Position+ot.Delete:]
 
-	if start < 0 {
+	if ot.Position < 0 {
 		return ErrTransformNegStart
 	}
 
