@@ -2,6 +2,7 @@
     <button (click)="createDocument($event)">Create</button>
     <input #documentId type="text" name="document-id">
     <button (click)="editDocument($event, documentId.value)">Edit</button>
+    <span>Id: {{ createdDocumentId }}</span>
 </div>
 
 <app-input-area></app-input-area>
