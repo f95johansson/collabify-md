@@ -66,8 +66,8 @@ export class PreviewAreaComponent implements OnInit, Observer {
     let pages = Array.from(dom.querySelectorAll(".page"));
     
     let str = pages.map((page, i) => {
-      let self = this;
-      return `<div class="page"> ${this.converter.makeHtml(page.innerHTML)}<span class="pageNumber">${i + 1}</span></div>`;
+      let self = this; // used for debugging
+      return `<div class="page"> ${this.converter.makeHtml(page.innerHTML).replace("&amp;nbsp;", " ")}<span class="pageNumber">${i + 1}</span></div>`;
     }).join("");
     return this.domSanitizer.bypassSecurityTrustHtml(str);
   }
