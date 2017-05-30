@@ -13,6 +13,7 @@ export class DocumentService implements Observable {
   private documentId: number;
   private documentVersion: number;
   private documentChanged: boolean = false;
+  private onDocumentCreated = (id) => {};
 
   /**
    * Sets up a WebSocket-connection to the server at the given URL
@@ -33,7 +34,8 @@ export class DocumentService implements Observable {
   }
 
 
-  connectToCreateDocument() {
+  connectToCreateDocument(onCreate = (id) => {}) {
+    this.onDocumentCreated = onCreate;
     this.connectToDocument(() => {
       this.socket.send(JSON.stringify({
         command: 'create',
@@ -74,9 +76,10 @@ export class DocumentService implements Observable {
     console.log(data)
 
     if (data.response_type === 'document') {
-      this.documentId = data.id;
+      this.documentId = data.leap_document.id;
       this.documentVersion = data.version;
       this.document = data.leap_document.content;
+      this.onDocumentCreated(data.leap_document.id);
       this.notifyObservers(new DocumentUpdate({
         position: 0,
         num_delete: 0,

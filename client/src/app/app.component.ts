@@ -9,17 +9,20 @@ import { DocumentService } from './services/document.service';
   providers: [DocumentService],
 })
 export class AppComponent {
-    private documentService: DocumentService;
+  private documentService: DocumentService;
+  createdDocumentId: string = '';
 
-    constructor(documentService: DocumentService) {
-        this.documentService = documentService;
-    }
+  constructor(documentService: DocumentService) {
+    this.documentService = documentService;
+  }
 
-    createDocument(event) {
-        this.documentService.connectToCreateDocument()
-    }
+  createDocument(event) {
+    this.documentService.connectToCreateDocument((id) => {
+      this.createdDocumentId = id;
+    })
+  }
 
-    editDocument(event, documentId) {
-        this.documentService.connectToEditDocument(documentId)
-    }
+  editDocument(event, documentId) {
+    this.documentService.connectToEditDocument(documentId)
+  }
 }
